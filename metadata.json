@@ -1,0 +1,6 @@
+{
+  "name": "مترجم جامع (مانهوا، ناول و زیرنویس)",
+  "description": "ابزار جامع ترجمه مانهوا، ناول و زیرنویس با قابلیت تایپ روی تصویر و پشتیبان‌گیری",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

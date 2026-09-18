@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مترجم جامع (مانهوا، ناول و زیرنویس)</title>
+    <meta name="description" content="ابزار جامع ترجمه مانهوا، ناول و زیرنویس با قابلیت تایپ روی تصویر و پشتیبان‌گیری" />
+    <meta property="og:title" content="مترجم جامع (مانهوا، ناول و زیرنویس)" />
+    <meta property="og:description" content="ابزار جامع ترجمه مانهوا، ناول و زیرنویس با قابلیت تایپ روی تصویر و پشتیبان‌گیری" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tanha&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .font-lalezar { font-family: 'Lalezar', cursive; }
+        .font-tanha { font-family: 'Tanha', cursive; }
+        .font-amiri { font-family: 'Amiri', serif; }
+        .custom-loader { width: 50px; height: 50px; border-radius: 50%; border: 5px solid #e0e0e0; border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .feature-button { transition: all 0.3s ease; }
+        .feature-button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] .details-arrow { transform: rotate(180deg); }
+        .mode-button.active { background-color: #3b82f6; color: white; }
+        .mode-button:not(.active) { background-color: #e5e7eb; color: #4b5563; }
+        .translation-output-textarea { background-color: #f9fafb; border: 2px solid transparent; transition: border-color 0.3s; white-space: pre-wrap; word-wrap: break-word; }
+        .translation-output-textarea:focus { border-color: #3b82f6; outline: none; background-color: white; }
+        .modal-backdrop { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .novel-image-modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 1rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .novel-image-modal-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 800px;
+            max-height: 95vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .novel-image-modal-content .canvas-container {
+            border: 2px dashed #ccc;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            background-color: #f0f0f0;
+        }
+        .novel-image-modal-content canvas {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: block;
+        }
+        .novel-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 0.75rem;
+        }
+        .novel-controls label {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        .novel-controls select, .novel-controls input {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+        }
+        .ai-detect-button .loader {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            margin-left: 0.5rem;
+        }
+        .padding-control {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .padding-control input[type="range"] {
+            flex-grow: 1;
+        }
+        .padding-control .padding-value {
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+        }
+        .translator-panel {
+            transition: all 0.3s ease-in-out;
+            border-radius: 1rem;
+        }
+        .is-translating {
+            border-width: 3px;
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .chunk-progress {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        .chunk-progress-container {
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 8px;
+            margin-top: 0.5rem;
+        }
+        .backup-progress-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        .backup-progress-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            min-width: 300px;
+        }
+        .backup-progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .backup-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="initial-load-check" class="fixed top-0 left-0 right-0 p-2 bg-red-500 text-white text-center text-sm z-[1000]">
+        در حال بارگذاری رابط کاربری... اگر این پیام می‌ماند، مشکلی وجود دارد.
+    </div>
+
+    <div id="backup-progress-overlay" class="backup-progress-overlay hidden">
+        <div class="backup-progress-box">
+            <div class="custom-loader mx-auto mb-4"></div>
+            <p id="backup-progress-text" class="text-lg font-semibold text-gray-700">در حال پردازش...</p>
+            <div class="backup-progress-bar">
+                <div id="backup-progress-fill" class="backup-progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-50">
+        <div id="restore-session-bar" class="hidden bg-yellow-400 p-4 text-center shadow-lg flex items-center justify-center gap-x-4">
+            <p class="font-semibold text-yellow-900">یک پروژه ذخیره‌شده پیدا شد. آیا می‌خواهید آن را بازیابی کنید؟</p>
+            <button id="restore-button" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">بازیابی</button>
+            <button id="dismiss-restore-button" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">نادیده‌گرفتن</button>
+        </div>
+
+        <div id="global-controls" class="p-4 bg-gray-100/80 backdrop-blur-sm">
+            <div class="container mx-auto max-w-4xl flex items-center justify-between p-2 bg-white/60 rounded-xl shadow-md">
+                <button id="open-batch-modal-button" class="w-12 h-12 bg-purple-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:bg-purple-700 transition-transform transform hover:scale-110" title="بارگذاری گروهی تصاویر">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
+                </button>
+                <div class="flex items-center gap-x-3">
+                    <button id="start-all-button" class="hidden flex-grow py-3 px-6 bg-green-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-green-700 transition-all transform hover:scale-105 disabled:bg-gray-400 disabled:scale-100 disabled:cursor-wait">شروع ترجمه همه</button>
+                    <button id="global-settings-button" class="hidden flex-shrink-0 w-12 h-12 bg-gray-700 text-white rounded-lg flex items-center justify-center hover:bg-gray-800 transition-transform transform hover:scale-110" title="تنظیمات کلی">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="main-content" class="pt-28 min-h-screen">
+        <div id="panels-container" class="space-y-8 p-4">
+        </div>
+    </div>
+
+    <div id="global-prompt-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50 modal-backdrop">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-xl leading-6 font-bold text-gray-900 text-center mb-4">تنظیمات کلی</h3>
+                <div class="mt-2 px-7 py-3 space-y-4">
+                    <div>
+                        <label for="global-prompt-input" class="block text-sm font-medium text-gray-700 mb-2">پرامپت کلی (برای همه پنل‌ها):</label>
+                        <textarea id="global-prompt-input" rows="5" class="w-full p-3 border border-gray-300 rounded-md shadow-sm" placeholder="از {language} برای زبان مقصد استفاده کنید..."></textarea>
+                    </div>
+                    <div class="pt-2 border-t">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">عملیات کلی:</label>
+                        <button id="copy-all-results-button" class="w-full px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-green-700 transition-colors">کپی همه نتایج</button>
+                        <div class="mt-3 flex items-center">
+                            <input id="copy-without-headers-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="copy-without-headers-checkbox" class="mr-2 block text-sm text-gray-900">کپی بدون شماره پنل</label>
+                        </div>
+                        <div class="mt-3 flex items-center">
+                            <input id="remove-half-space-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="remove-half-space-checkbox" class="mr-2 block text-sm text-gray-900">کپی بدون نیم‌فاصله</label>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">پشتیبان‌گیری کامل:</label>
+                            <div class="flex gap-3">
+                                <button id="download-backup-button" class="flex-1 px-4 py-3 bg-blue-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    دانلود بکاپ
+                                </button>
+                                <button id="upload-backup-button" class="flex-1 px-4 py-3 bg-orange-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    آپلود بکاپ
+                                </button>
+                            </div>
+                            <input type="file" id="backup-file-input" class="hidden" accept=".zip">
+                        </div>
+                    </div>
+                </div>
+                <div class="items-center px-4 py-3 mt-4 bg-gray-50 rounded-b-md flex gap-x-4">
+                    <button id="apply-global-prompt-button" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700">اعمال پرامپت</button>
+                    <button id="close-global-modal-button" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300">بستن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 modal-backdrop"><div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"><div class="mt-3 text-center"><div class="modal-icon-container mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"></div><h3 class="modal-title text-lg leading-6 font-medium text-gray-900 mt-2"></h3><div class="mt-2 px-7 py-3"><p id="message-text" class="text-sm text-gray-500"></p></div><div class="items-center px-4 py-3"><button id="close-modal-button" class="px-4 py-2 text-white text-base font-medium rounded-md w-full shadow-sm">بستن</button></div></div></div></div>
+    <input type="file" id="batch-image-upload-input" class="hidden" multiple accept="image/png, image/jpeg, image/webp">
+    <div id="batch-upload-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50 modal-backdrop"><div class="relative top-20 mx-auto p-6 border w-full max-w-md shadow-lg rounded-2xl bg-white"><h3 class="text-xl leading-6 font-bold text-gray-900 text-center">بارگذاری گروهی تصاویر</h3><div class="mt-6 py-4 border-t border-b"><div class="flex items-center justify-center"><input id="sort-by-name-checkbox" type="checkbox" class="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"><label for="sort-by-name-checkbox" class="mr-3 block text-md font-medium text-gray-800 cursor-pointer">ترتیب‌گذاری بر اساس نام فایل</label></div></div><div class="mt-6 space-y-3"><label for="batch-image-upload-input" class="w-full flex items-center justify-center px-4 py-3 bg-purple-600 text-white text-base font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-all transform hover:scale-105 cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>انتخاب عکس‌ها</label><button id="close-batch-modal-button" class="w-full px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-lg hover:bg-gray-300 transition-colors">بستن</button></div></div></div>
+
+    <script type="text/html" id="panel-template">
+        <div class="translator-panel container mx-auto max-w-4xl" data-mode="image">
+            <main class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
+                <header class="text-center mb-6 relative"><div class="flex items-center justify-center gap-x-3"><span class="panel-number text-3xl sm:text-4xl font-bold text-blue-600"></span><h1 class="text-3xl sm:text-4xl font-bold text-gray-900 panel-title">ترجمه مانهوا</h1><div class="flex gap-x-2 mr-auto"><button class="add-panel-button w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center text-2xl font-bold hover:bg-blue-600 transition-transform transform hover:scale-110" title="اضافه کردن پنل جدید">+</button><button class="remove-panel-button w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center text-2xl font-bold hover:bg-red-600 transition-transform transform hover:scale-110" title="حذف پنل">-</button></div></div><div class="mt-4 flex justify-center rounded-lg p-1 bg-gray-200 w-max mx-auto"><button class="mode-button active px-4 py-2 text-sm font-semibold rounded-md" data-mode-target="image">تصویر (مانهوا)</button><button class="mode-button px-4 py-2 text-sm font-semibold rounded-md" data-mode-target="text">متن (ناول)</button><button class="mode-button px-4 py-2 text-sm font-semibold rounded-md" data-mode-target="subtitle">متن (زیرنویس)</button></div></header>
+                
+                <div class="input-section">
+                    <div class="image-input-section"><label class="block text-lg font-semibold text-gray-700 mb-2">۱. بارگذاری تصویر</label><label class="image-preview-container mt-2 flex justify-center items-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 text-center cursor-pointer"><div class="upload-prompt"><svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg><p class="mt-2 text-sm text-gray-600"><span class="font-semibold text-blue-600">کلیک کنید</span></p><p class="text-xs text-gray-500">PNG, JPG, WEBP</p></div><img src="" alt="پیش‌نمایش تصویر" class="image-preview hidden h-full w-full object-contain rounded-lg"/></label><input type="file" class="image-upload hidden" accept="image/png, image/jpeg, image/webp"></div>
+                    <div class="text-input-section hidden"><label class="block text-lg font-semibold text-gray-700 mb-2 input-label">۱. وارد کردن متن</label><textarea class="text-area-input w-full p-3 border border-gray-300 rounded-md" rows="8" placeholder="متن خود را اینجا وارد کنید..."></textarea><div class="text-center my-2 font-semibold text-gray-500">یا</div><label class="file-label w-full block text-center bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-700 cursor-pointer">بارگذاری فایل</label><input type="file" class="file-upload hidden" accept=".txt,.srt,.vtt">
+                        <div class="novel-background-uploader hidden mt-4 p-4 border-t"><label class="block text-md font-semibold text-gray-700 mb-2">بارگذاری تصویر پس‌زمینه برای ناول</label><input type="file" class="novel-bg-upload w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" accept="image/png, image/jpeg, image/webp"></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-lg font-semibold text-gray-700">۲. انتخاب زبان مقصد</label>
+                        <select class="target-language mt-2 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                            <option value="Persian">فارسی</option>
+                            <option value="English">انگلیسی</option>
+                        </select>
+                    </div>
+                    <div>
+                        <details class="bg-gray-50 rounded-lg">
+                            <summary class="p-4 font-semibold text-gray-700 cursor-pointer flex justify-between items-center">
+                                <span>تنظیمات پرامپت پیشرفته</span>
+                                <svg class="w-5 h-5 transition-transform transform details-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </summary>
+                            <div class="p-4 border-t">
+                                <label class="block text-sm font-medium text-gray-600 mb-2">پرامپت اصلی:</label>
+                                <textarea rows="4" class="prompt-input w-full p-2 border border-gray-300 rounded-md text-sm" placeholder="برای راهنمایی در مورد جایگذاری متن در ناول تایپر، از عبارت [paddingTop: 20] استفاده کنید."></textarea>
+                                <button class="reset-prompt-button text-sm text-blue-600 hover:underline mt-2">بازنشانی</button>
+                            </div>
+                        </details>
+                    </div>
+                    <div class="subtitle-settings-section hidden flex items-center gap-x-4 p-3 bg-gray-100 rounded-lg border">
+                        <label class="flex-shrink-0 text-sm font-semibold text-gray-800 subtitle-chunk-label">تقسیم‌بندی ترجمه:</label>
+                        <input type="range" class="subtitle-chunk-slider w-full h-2 bg-gray-300 rounded-lg cursor-pointer appearance-none" min="1" max="10" value="3" step="1" style="direction: ltr;">
+                        <span class="subtitle-chunk-display font-bold text-blue-600 bg-white px-3 py-1 rounded-md text-sm shadow-sm">3</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-x-4"><button class="translate-button w-full flex justify-center py-3 px-4 border rounded-md shadow-sm text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">ترجمه</button><button class="novel-typer-button hidden w-full flex justify-center py-3 px-4 border rounded-md shadow-sm text-lg font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:bg-gray-400"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 ml-2" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>تایپ ناول</button></div>
+
+                <div class="results-container pt-6 hidden">
+                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">نتیجه ترجمه</h2>
+                    <div class="loader hidden flex flex-col items-center justify-center py-8">
+                        <div class="custom-loader"></div>
+                        <p class="chunk-progress-text mt-4 text-sm font-semibold text-gray-600 hidden"></p>
+                        <div class="chunk-progress-container hidden w-full max-w-md mt-2">
+                            <div class="chunk-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="translation-output-wrapper hidden relative"><textarea class="translation-output-textarea w-full p-4 pr-12 rounded-lg" rows="8"></textarea><button class="copy-button absolute top-3 left-3 bg-gray-200 text-gray-700 px-3 py-1 text-xs font-semibold rounded-md hover:bg-gray-300 transition-colors" title="کپی">کپی</button></div>
+                </div>
+                <div class="advanced-features-container pt-6 hidden"><h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">قابلیت‌های هوشمند ✨</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><button class="context-button feature-button w-full flex items-center justify-center text-center py-3 px-4 border rounded-md shadow-sm text-sm font-semibold text-white bg-teal-500 hover:bg-teal-600">توضیح زمینه فرهنگی</button><button class="tone-button feature-button w-full flex items-center justify-center text-center py-3 px-4 border rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600">تحلیل لحن</button></div><div class="mt-6 pt-4 border-t"><label class="block font-semibold text-gray-700 mb-2">تنظیم میزان عامیانه بودن: <span class="colloquial-level-display font-bold text-orange-600">50</span>%</label><input type="range" class="colloquial-slider w-full h-2 bg-gray-200 rounded-lg cursor-pointer" min="0" max="100" value="50" style="direction: ltr;"><button class="adjust-colloquial-button feature-button w-full mt-4 flex items-center justify-center text-center py-3 px-4 border rounded-md shadow-sm text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600">تنظیم لحن محاوره‌ای</button></div><div class="advanced-loader hidden flex justify-center items-center py-8"><div class="custom-loader"></div></div><div class="advanced-output hidden mt-4 p-4 bg-gray-50 rounded-lg whitespace-pre-wrap"></div></div>
+            </main>
+        </div>
+    </script>
+
+
+    <script>
+        const panelTemplateHTML = document.getElementById('panel-template').innerHTML;
+        let panelIdCounter = 0;
+        
+        const panelsContainer = document.getElementById('panels-container');
+        const messageModal = document.getElementById('message-modal');
+        const messageText = document.getElementById('message-text');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const startAllButton = document.getElementById('start-all-button');
+        
+        const globalSettingsButton = document.getElementById('global-settings-button');
+        const openBatchModalButton = document.getElementById('open-batch-modal-button');
+        
+        const globalPromptModal = document.getElementById('global-prompt-modal');
+        const closeGlobalModalButton = document.getElementById('close-global-modal-button');
+        const applyGlobalPromptButton = document.getElementById('apply-global-prompt-button');
+        const globalPromptInput = document.getElementById('global-prompt-input');
+        const copyAllResultsButton = document.getElementById('copy-all-results-button');
+        const copyWithoutHeadersCheckbox = document.getElementById('copy-without-headers-checkbox');
+        const removeHalfSpaceCheckbox = document.getElementById('remove-half-space-checkbox');
+        const downloadBackupButton = document.getElementById('download-backup-button');
+        const uploadBackupButton = document.getElementById('upload-backup-button');
+        const backupFileInput = document.getElementById('backup-file-input');
+        const backupProgressOverlay = document.getElementById('backup-progress-overlay');
+        const backupProgressText = document.getElementById('backup-progress-text');
+        const backupProgressFill = document.getElementById('backup-progress-fill');
+
+        const batchImageUploadInput = document.getElementById('batch-image-upload-input');
+        
+        const batchUploadModal = document.getElementById('batch-upload-modal');
+        const sortByNameCheckbox = document.getElementById('sort-by-name-checkbox');
+        const closeBatchModalButton = document.getElementById('close-batch-modal-button');
+
+        const restoreSessionBar = document.getElementById('restore-session-bar');
+        const restoreButton = document.getElementById('restore-button');
+        const dismissRestoreButton = document.getElementById('dismiss-restore-button');
+
+        const DEFAULT_PROMPT_IMAGE = `Translate any text found in this image to {language}. If the text is part of a dialogue bubble or a caption, maintain the characters' tone and make the translation natural and engaging for a native {language} speaker. Ignore sound effects outside of speech bubbles.`;
+        const DEFAULT_PROMPT_TEXT = `Translate the following text to {language}. Make the translation sound natural and fluent, as if it were originally written in {language}. Preserve the tone and style of the original text.`;
+        const DEFAULT_PROMPT_SUBTITLE = `You are an expert subtitle translator. Translate the following subtitle text to {language}. Preserve the timing cues (e.g., -->) and subtitle block structure exactly as they are. Only translate the dialogue lines. Provide only the translated subtitle content without any extra commentary.`;
+
+        function showMessage(message, type = 'error') {
+            const modalTitle = messageModal.querySelector('.modal-title');
+            const modalIconContainer = messageModal.querySelector('.modal-icon-container');
+            
+            messageText.textContent = message;
+
+            modalIconContainer.classList.remove('bg-red-100', 'bg-green-100');
+            closeModalButton.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-green-600', 'hover:bg-green-700');
+
+            if (type === 'success') {
+                modalTitle.textContent = 'موفقیت';
+                modalIconContainer.innerHTML = `<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                modalIconContainer.classList.add('bg-green-100');
+                closeModalButton.classList.add('bg-green-600', 'hover:bg-green-700');
+            } else {
+                modalTitle.textContent = 'خطا';
+                modalIconContainer.innerHTML = `<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                modalIconContainer.classList.add('bg-red-100');
+                closeModalButton.classList.add('bg-red-500', 'hover:bg-red-600');
+            }
+            messageModal.classList.remove('hidden');
+        }
+        
+        function showError(message) {
+            showMessage(message, 'error');
+        }
+
+        function showBackupProgress(text, percent) {
+            backupProgressText.textContent = text;
+            backupProgressFill.style.width = `${percent}%`;
+            backupProgressOverlay.classList.remove('hidden');
+        }
+
+        function hideBackupProgress() {
+            backupProgressOverlay.classList.add('hidden');
+        }
+
+        function cleanTranslationOutput(text) {
+            if (!text) return '';
+            text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            text = text.replace(/[ \t]+$/gm, '');
+            text = text.replace(/\n{3,}/g, '\n\n');
+            text = text.replace(/^\n+/, '').replace(/\n+$/, '');
+            return text.trim();
+        }
+
+        async function callGeminiAPI(parts, model = 'gemini-3-flash-preview') {
+            const apiUrl = `/api/gemini/generate`;
+            const payload = { 
+                parts: parts,
+                model: model || 'gemini-3-flash-preview',
+                config: { 
+                    temperature: 0.3, 
+                    topP: 0.95, 
+                    topK: 40 
+                }
+            };
+
+            let response;
+            let retryCount = 0;
+            const maxRetries = 3;
+            let delay = 1000;
+
+            while (retryCount < maxRetries) {
+                try {
+                    response = await fetch(apiUrl, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload) 
+                    });
+                    if (response.ok) break;
+
+                    let errorDetails = `${response.status} ${response.statusText}`;
+                    try { 
+                        const errorJson = await response.json(); 
+                        if (errorJson.error) errorDetails = errorJson.error; 
+                    } catch (e) {}
+
+                    if (response.status === 401 || response.status === 403) {
+                         throw new Error(`خطای احراز هویت یا دسترسی: ${errorDetails}`);
+                    }
+
+                    console.error(`API call failed with status ${response.status}. Retrying in ${delay}ms...`, errorDetails);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                    retryCount++;
+
+                } catch (error) {
+                    if (error.message && error.message.includes('خطای احراز هویت')) throw error;
+                    console.error(`Network error during API call. Retrying in ${delay}ms...`, error);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                    retryCount++;
+                }
+            }
+
+            if (!response || !response.ok) {
+                let errorDetails = response ? `${response.status} ${response.statusText}` : 'خطای ارتباط با سرور';
+                try {
+                    const err = await response.json();
+                    if (err.error) errorDetails = err.error;
+                } catch (e) {}
+                throw new Error(`درخواست به API با خطا مواجه شد: ${errorDetails}`);
+            }
+
+            const result = await response.json();
+            if (result.text !== undefined) {
+                 return cleanTranslationOutput(result.text);
+            }
+            throw new Error("پاسخ معتبری از API دریافت نشد.");
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        function splitImageIntoChunks(base64, mimeType, maxDimension = 3500) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = async () => {
+                    try {
+                        const { width, height } = img;
+                        let cols = 1, rows = 1;
+                        
+                        if (width > maxDimension * 3 || height > maxDimension * 3) {
+                            if (width >= height) { cols = 3; rows = 1; }
+                            else if (height >= width * 1.5) { cols = 1; rows = 3; }
+                        } else if (width > maxDimension * 2 || height > maxDimension * 2) {
+                            if (width >= height * 1.5) { cols = 3; rows = 1; }
+                            else if (height >= width * 1.5) { cols = 1; rows = 3; }
+                            else if (width >= height) { cols = 2; rows = 1; }
+                            else { cols = 1; rows = 2; }
+                        } else if (width > maxDimension || height > maxDimension) {
+                            if (width >= height * 1.5) { cols = 2; rows = 1; }
+                            else if (height >= width * 1.5) { cols = 1; rows = 2; }
+                            else if (width >= height) { cols = 2; rows = 1; }
+                            else { cols = 1; rows = 2; }
+                        }
+                        
+                        const chunkWidth = Math.floor(width / cols);
+                        const chunkHeight = Math.floor(height / rows);
+                        const chunks = [];
+                        
+                        const getOutputFormat = (originalMimeType) => {
+                            if (originalMimeType === 'image/png') return { mimeType: 'image/png', quality: undefined };
+                            else if (originalMimeType === 'image/webp') return { mimeType: 'image/webp', quality: 0.75 };
+                            else return { mimeType: 'image/jpeg', quality: 0.75 };
+                        };
+                        
+                        const { mimeType: outputMimeType, quality } = getOutputFormat(mimeType);
+                        
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                const canvas = document.createElement('canvas');
+                                const actualWidth = (c === cols - 1) ? width - (c * chunkWidth) : chunkWidth;
+                                const actualHeight = (r === rows - 1) ? height - (r * chunkHeight) : chunkHeight;
+                                
+                                canvas.width = actualWidth;
+                                canvas.height = actualHeight;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 
+                                    c * chunkWidth, r * chunkHeight, actualWidth, actualHeight,
+                                    0, 0, actualWidth, actualHeight
+                                );
+                                
+                                const blob = await new Promise((resolveBlob) => {
+                                    if (quality !== undefined) canvas.toBlob(resolveBlob, outputMimeType, quality);
+                                    else canvas.toBlob(resolveBlob, outputMimeType);
+                                });
+                                
+                                const base64Chunk = await blobToBase64(blob);
+                                
+                                chunks.push({
+                                    data: base64Chunk,
+                                    mimeType: outputMimeType,
+                                    index: r * cols + c + 1,
+                                    total: cols * rows,
+                                    width: actualWidth,
+                                    height: actualHeight,
+                                    sizeKB: Math.round(blob.size / 1024)
+                                });
+                            }
+                        }
+                        resolve(chunks);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                img.onerror = () => reject(new Error('خطا در بارگذاری تصویر برای تقسیم‌بندی.'));
+                img.src = `data:${mimeType};base64,${base64}`;
+            });
+        }
+
+        async function callGeminiAPIForImageChunks(prompt, chunks, onProgress, targetLanguage, model = 'gemini-3-flash-preview') {
+            let allTranslations = [];
+            let allPreviousTranslations = [];
+            
+            const userPrompt = prompt.replace(/{language}/g, targetLanguage);
+            
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const isFirst = i === 0;
+                
+                let userText = '';
+                
+                if (chunks.length === 1) {
+                    userText = userPrompt;
+                } else if (isFirst) {
+                    userText = `${userPrompt}
+
+[این تصویر به ${chunks.length} بخش تقسیم شده است. این بخش ۱ از ${chunks.length} است.]
+
+فقط متن قابل مشاهده در همین بخش را ترجمه کن. متن ترجمه‌شده را بدون هیچ توضیح اضافی، بدون شماره‌گذاری بخش، بدون نوشتن کلماتی مثل "بخش اول" یا "ادامه" برگردان.`;
+                } else {
+                    const previousTranslationsText = allPreviousTranslations.map((t, idx) => `--- ترجمه بخش ${idx + 1} ---
+${t}`).join('\n\n');
+                    
+                    userText = `${userPrompt}
+
+[این تصویر به ${chunks.length} بخش تقسیم شده است. شما در حال مشاهده بخش ${i + 1} از ${chunks.length} هستید.]
+
+[ترجمه کامل بخش‌های قبلی که قبلاً انجام داده‌اید:
+${previousTranslationsText}
+]
+
+حالا فقط متن قابل مشاهده در همین بخش جدید (${i + 1} از ${chunks.length}) را ترجمه کن. ترجمه بخش‌های قبلی را تکرار نکن. فقط متن جدید این بخش را ترجمه کن. متن ترجمه‌شده را بدون هیچ توضیح اضافی، بدون شماره‌گذاری بخش، بدون نوشتن کلماتی مثل "بخش ${i + 1}" یا "ادامه" برگردان. لحن و سبک پرامپت اصلی را دقیقاً رعایت کن.`;
+                }
+                
+                const userParts = [
+                    { text: userText },
+                    { inlineData: { mimeType: chunk.mimeType, data: chunk.data } }
+                ];
+                
+                if (onProgress) onProgress(i + 1, chunks.length);
+                
+                const translatedText = await callGeminiAPI(userParts, model);
+                
+                if (translatedText) {
+                    allTranslations.push(translatedText);
+                    allPreviousTranslations.push(translatedText);
+                }
+            }
+            
+            return allTranslations.join('\n\n');
+        }
+
+        function createAndAppendPanel() {
+            const newPanelFragment = document.createRange().createContextualFragment(panelTemplateHTML);
+            const newPanel = newPanelFragment.querySelector('.translator-panel');
+            panelsContainer.appendChild(newPanel);
+            initializePanel(newPanel);
+            return newPanel;
+        }
+        
+        let saveTimeout;
+        function scheduleSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveProject, 500);
+        }
+
+        function saveProject() {
+            try {
+                const allPanels = document.querySelectorAll('.translator-panel');
+                const projectData = [];
+                allPanels.forEach(panel => {
+                    const state = {
+                        mode: panel.dataset.mode,
+                        uploadedFileName: panel.state.uploadedFile ? panel.state.uploadedFile.name : null,
+                        uploadedFileType: panel.state.uploadedFile ? panel.state.uploadedFile.type : null,
+                        novelBgFileName: panel.state.novelBgFile ? panel.state.novelBgFile.name : null,
+                        novelBgFileType: panel.state.novelBgFile ? panel.state.novelBgFile.type : null,
+                        textInput: panel.querySelector('.text-area-input').value,
+                        targetLanguage: panel.querySelector('.target-language').value,
+                        prompt: panel.querySelector('.prompt-input').value,
+                        translationOutput: panel.querySelector('.translation-output-textarea').value,
+                        subtitleChunkValue: panel.querySelector('.subtitle-chunk-slider').value,
+                        colloquialSliderValue: panel.querySelector('.colloquial-slider').value,
+                        advancedOutput: panel.querySelector('.advanced-output').innerHTML,
+                    };
+                    projectData.push(state);
+                });
+                localStorage.setItem('translatorProject', JSON.stringify(projectData));
+            } catch (e) {
+                console.error("Failed to save project:", e);
+            }
+        }
+
+        function initializePanel(panel) {
+            const get = (selector) => panel.querySelector(selector);
+            panelIdCounter++;
+            const panelId = `panel-${panelIdCounter}`;
+            
+            get('.image-upload').id = `image-upload-${panelId}`;
+            get('.image-preview-container').htmlFor = `image-upload-${panelId}`;
+            get('.file-upload').id = `file-upload-${panelId}`;
+            get('.file-label').htmlFor = `file-upload-${panelId}`;
+            get('.subtitle-chunk-slider').id = `subtitle-chunk-slider-${panelId}`;
+            get('.subtitle-chunk-label').htmlFor = `subtitle-chunk-slider-${panelId}`;
+
+            const textAreaInput = get('.text-area-input');
+            const targetLanguageSelect = get('.target-language');
+            const promptInput = get('.prompt-input');
+            const translateButton = get('.translate-button');
+            const resultsContainer = get('.results-container');
+            const loader = get('.loader');
+            const advancedFeaturesContainer = get('.advanced-features-container');
+            const addPanelButton = get('.add-panel-button');
+            const removePanelButton = get('.remove-panel-button');
+            const panelTitle = get('.panel-title');
+            const modeButtons = panel.querySelectorAll('.mode-button');
+            const translationOutput = get('.translation-output-textarea');
+            const copyButton = get('.copy-button');
+            const subtitleSettingsSection = get('.subtitle-settings-section');
+            const subtitleChunkSlider = get('.subtitle-chunk-slider');
+            const subtitleChunkDisplay = get('.subtitle-chunk-display');
+            const colloquialSlider = get('.colloquial-slider');
+            const colloquialLevelDisplay = get('.colloquial-level-display');
+            const novelTyperButton = get('.novel-typer-button');
+            const novelBgUploaderSection = get('.novel-background-uploader');
+            const novelBgUploadInput = get('.novel-bg-upload');
+
+            const chunkProgressText = get('.chunk-progress-text');
+            const chunkProgressContainer = get('.chunk-progress-container');
+            const chunkProgressBar = get('.chunk-progress');
+
+            panel.state = { uploadedFile: null, lastTranslationResult: '', lastImageBase64: '', textInput: '', novelBgFile: null, novelBgBase64: '' };
+
+            const setMode = (mode) => {
+                panel.dataset.mode = mode;
+                get('.image-input-section').classList.toggle('hidden', mode !== 'image');
+                get('.text-input-section').classList.toggle('hidden', mode === 'image');
+                subtitleSettingsSection.classList.toggle('hidden', mode !== 'subtitle');
+                novelBgUploaderSection.classList.toggle('hidden', mode !== 'text');
+                novelTyperButton.classList.toggle('hidden', mode !== 'text');
+                if (mode === 'text') panelTitle.textContent = 'ترجمه ناول';
+                else if (mode === 'subtitle') panelTitle.textContent = 'ترجمه زیرنویس';
+                else panelTitle.textContent = 'ترجمه مانهوا';
+                modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.modeTarget === mode));
+                initializePromptText();
+                scheduleSave();
+            };
+
+            const initializePromptText = () => {
+                 const lang = targetLanguageSelect.value;
+                 let prompt = '';
+                 switch(panel.dataset.mode) {
+                    case 'image': prompt = DEFAULT_PROMPT_IMAGE; break;
+                    case 'text': prompt = DEFAULT_PROMPT_TEXT; break;
+                    case 'subtitle': prompt = DEFAULT_PROMPT_SUBTITLE; break;
+                 }
+                 promptInput.value = prompt.replace(/{language}/g, lang);
+            };
+
+            const handleImageUpload = (file) => {
+                if (!file) return;
+                setMode('image');
+                panel.state.uploadedFile = file; panel.state.lastImageBase64 = ''; 
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    get('.image-preview').src = e.target.result;
+                    panel.state.lastImageBase64 = e.target.result.split(',')[1]; 
+                    get('.image-preview').classList.remove('hidden');
+                    get('.upload-prompt').classList.add('hidden');
+                    scheduleSave();
+                };
+                reader.onerror = () => { showError('خطا در خواندن فایل.'); panel.state.uploadedFile = null; };
+                reader.readAsDataURL(file);
+            };
+            panel.handleImageUpload = handleImageUpload;
+
+            const handleTextFileUpload = (file) => {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => { 
+                    textAreaInput.value = e.target.result; 
+                    panel.state.textInput = e.target.result; 
+                    scheduleSave();
+                };
+                reader.onerror = () => showError('خطا در خواندن فایل متنی.');
+                reader.readAsText(file);
+            };
+
+            const handleNovelBgUpload = (file) => {
+                if (!file) return;
+                panel.state.novelBgFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    panel.state.novelBgBase64 = e.target.result.split(',')[1];
+                    scheduleSave();
+                };
+                reader.onerror = () => { showError('خطا در خواندن فایل پس‌زمینه.'); panel.state.novelBgFile = null; panel.state.novelBgBase64 = ''; };
+                reader.readAsDataURL(file);
+            };
+            
+            const chunkText = (text, numChunks = 1) => {
+                if (numChunks <= 1) return [text];
+                const lines = text.split('\n');
+                const chunks = [];
+                const chunkSize = Math.ceil(lines.length / numChunks);
+                for (let i = 0; i < lines.length; i += chunkSize) chunks.push(lines.slice(i, i + chunkSize).join('\n'));
+                return chunks.filter(c => c.trim() !== '');
+            };
+
+            panel.handleTranslation = async () => {
+                const mode = panel.dataset.mode;
+                translateButton.disabled = true;
+                resultsContainer.classList.remove('hidden');
+                loader.classList.remove('hidden');
+                get('.translation-output-wrapper').classList.add('hidden');
+                advancedFeaturesContainer.classList.add('hidden');
+                let errorOccurred = false;
+
+                try {
+                    let resultText = '';
+                    const targetLang = targetLanguageSelect.value;
+                    
+                    if (mode === 'image') {
+                        if (!panel.state.lastImageBase64) throw new Error("تصویری در این پنل بارگذاری نشده است.");
+                        
+                        const img = new Image();
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                            img.src = `data:${panel.state.uploadedFile.type};base64,${panel.state.lastImageBase64}`;
+                        });
+                        
+                        const { width, height } = img;
+                        const maxDimension = 3500;
+                        const needsSplit = width > maxDimension || height > maxDimension;
+                        
+                        if (needsSplit) {
+                            chunkProgressText.textContent = 'در حال پردازش تصویر بزرگ...';
+                            chunkProgressText.classList.remove('hidden');
+                            chunkProgressContainer.classList.remove('hidden');
+                            
+                            const chunks = await splitImageIntoChunks(panel.state.lastImageBase64, panel.state.uploadedFile.type, maxDimension);
+                            
+                            const totalSizeKB = chunks.reduce((sum, chunk) => sum + chunk.sizeKB, 0);
+                            chunkProgressText.textContent = `تصویر به ${chunks.length} بخش تقسیم شد (حجم کل: ${totalSizeKB} کیلوبایت). در حال ترجمه...`;
+                            
+                            resultText = await callGeminiAPIForImageChunks(
+                                promptInput.value, 
+                                chunks, 
+                                (current, total) => {
+                                    const percent = Math.round((current / total) * 100);
+                                    chunkProgressBar.style.width = `${percent}%`;
+                                    chunkProgressText.textContent = `در حال ترجمه بخش ${current} از ${total} (${percent}%)`;
+                                },
+                                targetLang
+                            );
+                        } else {
+                            const parts = [{ text: promptInput.value }, { inlineData: { mimeType: panel.state.uploadedFile.type, data: panel.state.lastImageBase64 } }];
+                            resultText = await callGeminiAPI(parts);
+                        }
+                    } else { 
+                        panel.state.textInput = textAreaInput.value;
+                        if (!panel.state.textInput.trim()) throw new Error("لطفاً متنی برای ترجمه وارد کنید.");
+                        
+                        if (mode === 'subtitle') {
+                            const numChunks = parseInt(subtitleChunkSlider.value, 10);
+                            const chunks = chunkText(panel.state.textInput, numChunks);
+                            let translatedChunks = [];
+                            for (let i = 0; i < chunks.length; i++) {
+                                const promptForChunk = `${promptInput.value}\n\n[Translate only the following text block, which is part ${i + 1} of ${chunks.length} to ${targetLang}]\n\n${chunks[i]}`;
+                                translatedChunks.push(await callGeminiAPI([{ text: promptForChunk }]));
+                            }
+                            resultText = translatedChunks.join('\n\n');
+                        } else {
+                            const parts = [{ text: `${promptInput.value}\n\n${panel.state.textInput}` }];
+                            resultText = await callGeminiAPI(parts);
+                        }
+                    }
+                    
+                    resultText = cleanTranslationOutput(resultText);
+                    
+                    translationOutput.value = resultText;
+                    panel.state.lastTranslationResult = resultText;
+                    if (resultText) advancedFeaturesContainer.classList.remove('hidden');
+                    scheduleSave();
+                } catch (error) {
+                    errorOccurred = true;
+                    showError(`خطا در پنل ${get('.panel-number').textContent}: ${error.message}`);
+                    throw error; 
+                } finally {
+                    loader.classList.add('hidden');
+                    chunkProgressText.classList.add('hidden');
+                    chunkProgressContainer.classList.add('hidden');
+                    chunkProgressBar.style.width = '0%';
+                    if (!errorOccurred) {
+                        resultsContainer.classList.remove('hidden');
+                        get('.translation-output-wrapper').classList.remove('hidden');
+                    }
+                    translateButton.disabled = false;
+                }
+            };
+
+            const handleNovelTyper = () => {
+                const textToDraw = translationOutput.value.trim() || textAreaInput.value.trim();
+                if (!textToDraw) {
+                    showError("هیچ متنی برای نوشتن روی تصویر وجود ندارد. لطفاً متنی را وارد یا ترجمه کنید.");
+                    return;
+                }
+                if (!panel.state.novelBgFile || !panel.state.novelBgBase64) {
+                    showError("لطفاً یک تصویر پس‌زمینه برای ناول انتخاب کنید.");
+                    return;
+                }
+
+                const modal = document.createElement('div');
+                modal.className = 'novel-image-modal';
+                modal.innerHTML = `
+                    <div class="novel-image-modal-content">
+                        <div class="canvas-container"><canvas id="novel-canvas"></canvas></div>
+                        <div class="novel-controls">
+                            <div><label for="font-family">فونت</label><select id="font-family" class="font-selector"><option value="Amiri">امیری (کلاسیک)</option><option value="Lalezar">لاله‌زار</option><option value="Vazirmatn">وزیرمتن</option><option value="Tanha">تنها</option></select></div>
+                            <div><label for="font-size">اندازه فونت</label><input type="range" id="font-size" class="font-size-slider" min="10" max="150" value="30"></div>
+                            <div><label for="font-color">رنگ فونت</label><input type="color" id="font-color" class="font-color-picker" value="#F5EFE6"></div>
+                            <div><label for="text-align">چینش متن</label><select id="text-align" class="text-align-selector"><option value="justify">تمام‌صفحه‌چین (Justify)</option><option value="right">راست‌چین</option><option value="center">وسط‌چین</option><option value="left">چپ‌چین</option></select></div>
+                            <div class="padding-control">
+                                <label for="padding-top">فاصله از بالا</label>
+                                <input type="range" id="padding-top" class="padding-top-slider" min="0" max="100" value="15">
+                                <span class="padding-value">15%</span>
+                            </div>
+                        </div>
+                        <button class="ai-detect-button w-full flex items-center justify-center px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all">تشخیص بهترین موقعیت با هوش مصنوعی <span class="loader custom-loader hidden"></span></button>
+                        <div class="mt-4 flex flex-col sm:flex-row gap-4 justify-center">
+                            <button class="download-btn w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700">دانلود تصویر</button>
+                            <button class="close-btn w-full sm:w-auto px-6 py-3 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400">بستن</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                const canvas = modal.querySelector('#novel-canvas');
+                const bgImage = new Image();
+                const paddingTopSlider = modal.querySelector('.padding-top-slider');
+                const paddingTopValue = modal.querySelector('.padding-value');
+                
+                const renderOptions = {
+                    text: textToDraw,
+                    font: 'Amiri',
+                    fontSize: 30,
+                    color: '#F5EFE6',
+                    textAlign: 'justify',
+                    paddingTop: 15
+                };
+
+                const paddingTopMatch = promptInput.value.match(/\[paddingTop:\s*(\d+)\s*\]/i);
+                if (paddingTopMatch && paddingTopMatch[1]) {
+                    const val = parseInt(paddingTopMatch[1], 10);
+                    renderOptions.paddingTop = val;
+                    paddingTopSlider.value = val;
+                    paddingTopValue.textContent = `${val}%`;
+                }
+
+                const drawCanvas = () => drawNovelTextOnCanvas(canvas, bgImage, renderOptions);
+
+                bgImage.onload = () => {
+                    canvas.width = bgImage.width;
+                    canvas.height = bgImage.height;
+                    drawCanvas();
+                };
+                bgImage.onerror = () => {
+                    document.body.removeChild(modal);
+                    showError("خطا در بارگذاری تصویر پس‌زمینه.");
+                };
+                bgImage.src = `data:${panel.state.novelBgFile.type};base64,${panel.state.novelBgBase64}`;
+                
+                modal.querySelector('.font-selector').addEventListener('change', (e) => { renderOptions.font = e.target.value; drawCanvas(); });
+                modal.querySelector('.font-size-slider').addEventListener('input', (e) => { renderOptions.fontSize = e.target.value; drawCanvas(); });
+                modal.querySelector('.font-color-picker').addEventListener('input', (e) => { renderOptions.color = e.target.value; drawCanvas(); });
+                modal.querySelector('.text-align-selector').addEventListener('change', (e) => { renderOptions.textAlign = e.target.value; drawCanvas(); });
+                paddingTopSlider.addEventListener('input', (e) => { 
+                    renderOptions.paddingTop = e.target.value;
+                    paddingTopValue.textContent = `${e.target.value}%`;
+                    drawCanvas(); 
+                });
+                modal.querySelector('.close-btn').addEventListener('click', () => document.body.removeChild(modal));
+                modal.querySelector('.download-btn').addEventListener('click', () => {
+                    const link = document.createElement('a');
+                    link.download = 'novel-image.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+
+                modal.querySelector('.ai-detect-button').addEventListener('click', async (e) => {
+                    const button = e.currentTarget;
+                    const loader = button.querySelector('.loader');
+                    button.disabled = true;
+                    loader.classList.remove('hidden');
+                    try {
+                        const geminiPrompt = `Analyze the image and find the best vertical starting position for text. Respond with ONLY the integer value for the percentage from the top (e.g., 20 or 55). Do not include any other text or formatting.`;
+                        const parts = [
+                            { text: geminiPrompt },
+                            { inlineData: { mimeType: panel.state.novelBgFile.type, data: panel.state.novelBgBase64 } }
+                        ];
+                        const resultText = await callGeminiAPI(parts);
+                        const value = parseInt(resultText.trim(), 10);
+
+                        if (!isNaN(value) && value >= 5 && value <= 85) {
+                            renderOptions.paddingTop = value;
+                            paddingTopSlider.value = value;
+                            paddingTopValue.textContent = `${value}%`;
+                            drawCanvas();
+                        } else {
+                            throw new Error("پاسخ هوش مصنوعی معتبر نبود. لطفاً به صورت دستی تنظیم کنید.");
+                        }
+                    } catch (error) {
+                        showError(`خطا در تشخیص موقعیت: ${error.message}`);
+                    } finally {
+                        button.disabled = false;
+                        loader.classList.add('hidden');
+                    }
+                });
+            };
+
+            const drawNovelTextOnCanvas = (canvas, bgImage, options) => {
+                const { text, font, fontSize, color, textAlign, paddingTop } = options;
+                const ctx = canvas.getContext('2d');
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(bgImage, 0, 0);
+
+                ctx.font = `${fontSize}px ${font}`;
+                ctx.fillStyle = color;
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                const sidePadding = Math.max(30, canvas.width * 0.05);
+                const maxWidth = canvas.width - (sidePadding * 2);
+                const lineHeight = parseInt(fontSize) * 1.5;
+                const paragraphs = text.split('\n');
+                
+                const wrapLine = (line) => {
+                    if (!line) return [''];
+                    if (ctx.measureText(line).width <= maxWidth) return [line];
+                    
+                    const words = line.split(/\s+/);
+                    const lines = [];
+                    let currentLine = '';
+                    
+                    for (const word of words) {
+                        const testLine = currentLine ? currentLine + ' ' + word : word;
+                        if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+                            lines.push(currentLine);
+                            currentLine = word;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    if (currentLine) lines.push(currentLine);
+                    return lines;
+                };
+                
+                let currentY = (canvas.height * paddingTop) / 100;
+                
+                paragraphs.forEach(paragraph => {
+                    if (paragraph.trim() === '') {
+                        currentY += lineHeight;
+                        return;
+                    }
+                    
+                    const wrappedLines = wrapLine(paragraph);
+                    
+                    wrappedLines.forEach((line, lineIndex) => {
+                        const isLastLine = lineIndex === wrappedLines.length - 1;
+                        let currentTextAlign = textAlign;
+                        if (isLastLine && currentTextAlign === 'justify') {
+                            currentTextAlign = 'right'; 
+                        }
+                        
+                        if (currentTextAlign === 'justify' && !isLastLine) {
+                            const wordsInLine = line.split(/\s+/);
+                            if (wordsInLine.length > 1) {
+                                const totalWordsWidth = ctx.measureText(wordsInLine.join(' ')).width;
+                                const totalSpaceToDistribute = maxWidth - totalWordsWidth;
+                                const gap = totalSpaceToDistribute / (wordsInLine.length - 1);
+                                let currentX = canvas.width - sidePadding;
+                                ctx.textAlign = 'right';
+                                wordsInLine.forEach(word => {
+                                    ctx.fillText(word, currentX, currentY);
+                                    currentX -= (ctx.measureText(word).width + gap);
+                                });
+                            } else { 
+                                ctx.textAlign = 'right';
+                                ctx.fillText(line, canvas.width - sidePadding, currentY);
+                            }
+                        } else {
+                            let startX;
+                            if (currentTextAlign === 'left') { startX = sidePadding; } 
+                            else if (currentTextAlign === 'right') { startX = canvas.width - sidePadding; } 
+                            else { startX = canvas.width / 2; }
+                            ctx.textAlign = currentTextAlign;
+                            ctx.fillText(line, startX, currentY);
+                        }
+                        currentY += lineHeight;
+                    });
+                });
+            };
+            
+            [targetLanguageSelect, get('.image-upload'), get('.file-upload')].forEach(el => el.addEventListener('change', scheduleSave));
+            [textAreaInput, promptInput].forEach(el => el.addEventListener('input', scheduleSave));
+            [subtitleChunkSlider, colloquialSlider].forEach(el => el.addEventListener('input', () => {
+                if (el.classList.contains('subtitle-chunk-slider')) subtitleChunkDisplay.textContent = el.value;
+                if (el.classList.contains('colloquial-slider')) colloquialLevelDisplay.textContent = el.value;
+                scheduleSave();
+            }));
+            get('.image-upload').addEventListener('change', (e) => handleImageUpload(e.target.files[0]));
+            get('.file-upload').addEventListener('change', (e) => handleTextFileUpload(e.target.files[0]));
+            novelBgUploadInput.addEventListener('change', (e) => handleNovelBgUpload(e.target.files[0]));
+            modeButtons.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.modeTarget)));
+            translateButton.addEventListener('click', panel.handleTranslation);
+            novelTyperButton.addEventListener('click', handleNovelTyper);
+            addPanelButton.addEventListener('click', () => { createAndAppendPanel(); updatePanelNumbers(); });
+            removePanelButton.addEventListener('click', () => {
+                if (document.querySelectorAll('.translator-panel').length > 1) {
+                    panel.remove();
+                    updatePanelNumbers();
+                } else {
+                    showError("نمی‌توانید آخرین پنل را حذف کنید.");
+                }
+            });
+
+            const contextButton = get('.context-button');
+            const toneButton = get('.tone-button');
+            const adjustColloquialButton = get('.adjust-colloquial-button');
+            const advancedLoader = get('.advanced-loader');
+            const advancedOutput = get('.advanced-output');
+
+            if (contextButton) {
+                contextButton.addEventListener('click', async () => {
+                    const text = translationOutput.value.trim() || textAreaInput.value.trim();
+                    if (!text) {
+                        showError("متنی برای بررسی زمینه فرهنگی وجود ندارد.");
+                        return;
+                    }
+                    advancedLoader.classList.remove('hidden');
+                    advancedOutput.classList.add('hidden');
+                    contextButton.disabled = true;
+                    try {
+                        const prompt = `متن زیر را بررسی کن و زمینه فرهنگی، ارجاعات بومی، استعاره‌ها و اصطلاحات خاص فرهنگی آن را به شکل خلاصه و شفاف به زبان فارسی توضیح بده:\n\n${text}`;
+                        const res = await callGeminiAPI([{ text: prompt }]);
+                        advancedOutput.textContent = res;
+                        advancedOutput.classList.remove('hidden');
+                        scheduleSave();
+                    } catch (e) {
+                        showError("خطا در بررسی زمینه فرهنگی: " + e.message);
+                    } finally {
+                        advancedLoader.classList.add('hidden');
+                        contextButton.disabled = false;
+                    }
+                });
+            }
+
+            if (toneButton) {
+                toneButton.addEventListener('click', async () => {
+                    const text = translationOutput.value.trim() || textAreaInput.value.trim();
+                    if (!text) {
+                        showError("متنی برای تحلیل لحن وجود ندارد.");
+                        return;
+                    }
+                    advancedLoader.classList.remove('hidden');
+                    advancedOutput.classList.add('hidden');
+                    toneButton.disabled = true;
+                    try {
+                        const prompt = `لحن، احساسات غالب و میزان رسمیت یا صمیمیت متن زیر را به صورت دقیق و کوتاه به زبان فارسی تحلیل کن:\n\n${text}`;
+                        const res = await callGeminiAPI([{ text: prompt }]);
+                        advancedOutput.textContent = res;
+                        advancedOutput.classList.remove('hidden');
+                        scheduleSave();
+                    } catch (e) {
+                        showError("خطا در تحلیل لحن: " + e.message);
+                    } finally {
+                        advancedLoader.classList.add('hidden');
+                        toneButton.disabled = false;
+                    }
+                });
+            }
+
+            if (adjustColloquialButton) {
+                adjustColloquialButton.addEventListener('click', async () => {
+                    const text = translationOutput.value.trim();
+                    if (!text) {
+                        showError("متن ترجمه‌ای برای تنظیم لحن وجود ندارد.");
+                        return;
+                    }
+                    const level = colloquialSlider.value;
+                    advancedLoader.classList.remove('hidden');
+                    adjustColloquialButton.disabled = true;
+                    try {
+                        const prompt = `متن فارسی زیر را به گونه‌ای بازنویسی کن که میزان عامیانه و محاوره‌ای بودن آن دقیقاً ${level} درصد باشد (۰ درصد یعنی کاملاً کتابی، فاخر و رسمی؛ ۱۰۰ درصد یعنی کاملاً گفتاری و کوچه بازاری/صمیمانه). فقط و فقط ترجمه بازنویسی‌شده را بدون توضیحات اضافی برگردان:\n\n${text}`;
+                        const res = await callGeminiAPI([{ text: prompt }]);
+                        translationOutput.value = res;
+                        panel.state.lastTranslationResult = res;
+                        advancedOutput.textContent = `لحن متن با موفقیت روی ${level}% محاوره‌ای تنظیم شد.`;
+                        advancedOutput.classList.remove('hidden');
+                        scheduleSave();
+                    } catch (e) {
+                        showError("خطا در تنظیم لحن محاوره‌ای: " + e.message);
+                    } finally {
+                        advancedLoader.classList.add('hidden');
+                        adjustColloquialButton.disabled = false;
+                    }
+                });
+            }
+
+            copyButton.addEventListener('click', () => {
+                if (!translationOutput.value.trim()) {
+                    showError("متنی برای کپی کردن وجود ندارد.");
+                    return;
+                }
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = translationOutput.value;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyButton.textContent = 'کپی شد!';
+                    setTimeout(() => { copyButton.textContent = 'کپی'; }, 2000);
+                } catch (err) {
+                    showError('خطا در کپی کردن متن.');
+                }
+                document.body.removeChild(tempTextArea);
+            });
+
+            initializePromptText();
+        }
+
+        function updatePanelNumbers() {
+            const allPanels = document.querySelectorAll('.translator-panel');
+            const showMultiPanelControls = allPanels.length > 1;
+            startAllButton.classList.toggle('hidden', !showMultiPanelControls);
+            globalSettingsButton.classList.toggle('hidden', !showMultiPanelControls);
+            allPanels.forEach((panel, index) => {
+                panel.querySelector('.panel-number').textContent = `${index + 1}`;
+                const removeButton = panel.querySelector('.remove-panel-button');
+                if (removeButton) removeButton.classList.toggle('hidden', allPanels.length <= 1);
+            });
+            scheduleSave();
+        }
+
+        async function createBackupZip() {
+            const allPanels = document.querySelectorAll('.translator-panel');
+            const zip = new JSZip();
+            const backupData = {
+                version: "1.0",
+                timestamp: new Date().toISOString(),
+                panels: []
+            };
+
+            let imageCounter = 0;
+
+            for (let i = 0; i < allPanels.length; i++) {
+                const panel = allPanels[i];
+                const panelData = {
+                    index: i + 1,
+                    mode: panel.dataset.mode,
+                    textInput: panel.querySelector('.text-area-input').value,
+                    targetLanguage: panel.querySelector('.target-language').value,
+                    prompt: panel.querySelector('.prompt-input').value,
+                    translationOutput: panel.querySelector('.translation-output-textarea').value,
+                    subtitleChunkValue: panel.querySelector('.subtitle-chunk-slider').value,
+                    colloquialSliderValue: panel.querySelector('.colloquial-slider').value,
+                    advancedOutput: panel.querySelector('.advanced-output').innerHTML,
+                    imageFile: null,
+                    imageFileType: null,
+                    bgFile: null,
+                    bgFileType: null
+                };
+
+                showBackupProgress(`در حال جمع‌آوری پنل ${i + 1} از ${allPanels.length}...`, ((i + 1) / allPanels.length) * 50);
+
+                if (panel.state.uploadedFile && panel.state.lastImageBase64) {
+                    imageCounter++;
+                    const ext = panel.state.uploadedFile.type.split('/')[1] || 'jpg';
+                    const filename = `panel-${imageCounter}.${ext}`;
+                    panelData.imageFile = filename;
+                    panelData.imageFileType = panel.state.uploadedFile.type;
+                    
+                    const binaryData = atob(panel.state.lastImageBase64);
+                    const bytes = new Uint8Array(binaryData.length);
+                    for (let j = 0; j < binaryData.length; j++) {
+                        bytes[j] = binaryData.charCodeAt(j);
+                    }
+                    zip.file(filename, bytes);
+                }
+
+                if (panel.state.novelBgFile && panel.state.novelBgBase64) {
+                    imageCounter++;
+                    const ext = panel.state.novelBgFile.type.split('/')[1] || 'jpg';
+                    const filename = `bg-${imageCounter}.${ext}`;
+                    panelData.bgFile = filename;
+                    panelData.bgFileType = panel.state.novelBgFile.type;
+                    
+                    const binaryData = atob(panel.state.novelBgBase64);
+                    const bytes = new Uint8Array(binaryData.length);
+                    for (let j = 0; j < binaryData.length; j++) {
+                        bytes[j] = binaryData.charCodeAt(j);
+                    }
+                    zip.file(filename, bytes);
+                }
+
+                backupData.panels.push(panelData);
+                
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            showBackupProgress('در حال ساخت فایل بکاپ...', 60);
+
+            zip.file('index.json', JSON.stringify(backupData, null, 2));
+
+            showBackupProgress('در حال فشرده‌سازی...', 80);
+
+            const blob = await zip.generateAsync({ 
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            }, (metadata) => {
+                showBackupProgress(`در حال فشرده‌سازی... ${Math.round(metadata.percent)}%`, 80 + (metadata.percent * 0.2));
+            });
+
+            return blob;
+        }
+
+        async function downloadBackup() {
+            try {
+                showBackupProgress('شروع پشتیبان‌گیری...', 0);
+                
+                const blob = await createBackupZip();
+                
+                showBackupProgress('در حال دانلود...', 100);
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `translator-backup-${new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_')}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                
+                hideBackupProgress();
+                showMessage('بکاپ با موفقیت دانلود شد!', 'success');
+                
+            } catch (error) {
+                hideBackupProgress();
+                showError(`خطا در ساخت بکاپ: ${error.message}`);
+            }
+        }
+
+        async function restoreBackupFromFile(file) {
+            try {
+                showBackupProgress('در حال خواندن فایل بکاپ...', 0);
+                
+                const zip = await JSZip.loadAsync(file);
+                
+                showBackupProgress('در حال خواندن اطلاعات...', 10);
+                
+                const indexFile = zip.file('index.json');
+                if (!indexFile) {
+                    throw new Error('فایل بکاپ نامعتبر است: فایل اطلاعات پیدا نشد.');
+                }
+                
+                const backupData = JSON.parse(await indexFile.async('string'));
+                
+                if (!backupData.version || !backupData.panels || !Array.isArray(backupData.panels)) {
+                    throw new Error('فایل بکاپ نامعتبر است.');
+                }
+                
+                showBackupProgress(`در حال بازیابی ${backupData.panels.length} پنل...`, 20);
+                
+                panelsContainer.innerHTML = '';
+                
+                for (let i = 0; i < backupData.panels.length; i++) {
+                    const panelData = backupData.panels[i];
+                    const newPanel = createAndAppendPanel();
+                    
+                    showBackupProgress(`بازیابی پنل ${i + 1} از ${backupData.panels.length}...`, 20 + ((i + 1) / backupData.panels.length * 60));
+                    
+                    newPanel.querySelector(`[data-mode-target='${panelData.mode}']`).click();
+                    
+                    newPanel.querySelector('.text-area-input').value = panelData.textInput || '';
+                    newPanel.state.textInput = panelData.textInput || '';
+                    newPanel.querySelector('.target-language').value = panelData.targetLanguage || 'Persian';
+                    newPanel.querySelector('.prompt-input').value = panelData.prompt || '';
+                    
+                    if (panelData.translationOutput) {
+                        newPanel.querySelector('.translation-output-textarea').value = panelData.translationOutput;
+                        newPanel.state.lastTranslationResult = panelData.translationOutput;
+                        newPanel.querySelector('.results-container').classList.remove('hidden');
+                        newPanel.querySelector('.translation-output-wrapper').classList.remove('hidden');
+                        // 🔥 رفع باگ: لودر رو مخفی کن
+                        newPanel.querySelector('.loader').classList.add('hidden');
+                        newPanel.querySelector('.chunk-progress-text').classList.add('hidden');
+                        newPanel.querySelector('.chunk-progress-container').classList.add('hidden');
+                    }
+                    
+                    if (panelData.advancedOutput) {
+                        newPanel.querySelector('.advanced-output').innerHTML = panelData.advancedOutput;
+                        newPanel.querySelector('.advanced-output').classList.remove('hidden');
+                        newPanel.querySelector('.advanced-features-container').classList.remove('hidden');
+                        newPanel.querySelector('.advanced-loader').classList.add('hidden');
+                    }
+                    
+                    newPanel.querySelector('.subtitle-chunk-slider').value = panelData.subtitleChunkValue || '3';
+                    newPanel.querySelector('.subtitle-chunk-display').textContent = panelData.subtitleChunkValue || '3';
+                    newPanel.querySelector('.colloquial-slider').value = panelData.colloquialSliderValue || '50';
+                    newPanel.querySelector('.colloquial-level-display').textContent = panelData.colloquialSliderValue || '50';
+                    
+                    if (panelData.imageFile && panelData.imageFileType) {
+                        const imageFile = zip.file(panelData.imageFile);
+                        if (imageFile) {
+                            const imageBlob = await imageFile.async('blob');
+                            const imageFileObj = new File([imageBlob], panelData.imageFile, { type: panelData.imageFileType });
+                            newPanel.handleImageUpload(imageFileObj);
+                        }
+                    }
+                    
+                    if (panelData.bgFile && panelData.bgFileType) {
+                        const bgFile = zip.file(panelData.bgFile);
+                        if (bgFile) {
+                            const bgBlob = await bgFile.async('blob');
+                            const bgFileObj = new File([bgBlob], panelData.bgFile, { type: panelData.bgFileType });
+                            
+                            const novelBgInput = newPanel.querySelector('.novel-bg-upload');
+                            if (novelBgInput) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    newPanel.state.novelBgFile = bgFileObj;
+                                    newPanel.state.novelBgBase64 = e.target.result.split(',')[1];
+                                };
+                                reader.readAsDataURL(bgFileObj);
+                            }
+                        }
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                updatePanelNumbers();
+                hideBackupProgress();
+                showMessage(`${backupData.panels.length} پنل با موفقیت بازیابی شد!`, 'success');
+                
+            } catch (error) {
+                hideBackupProgress();
+                showError(`خطا در بازیابی بکاپ: ${error.message}`);
+            }
+        }
+
+        downloadBackupButton.addEventListener('click', downloadBackup);
+        
+        uploadBackupButton.addEventListener('click', () => {
+            backupFileInput.click();
+        });
+        
+        backupFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.name.endsWith('.zip')) {
+                    showError('لطفاً یک فایل ZIP انتخاب کنید.');
+                    e.target.value = null;
+                    return;
+                }
+                restoreBackupFromFile(file);
+                e.target.value = null;
+            }
+        });
+
+        function restoreProject() {
+            const savedDataJSON = localStorage.getItem('translatorProject');
+            if (!savedDataJSON) return;
+            try {
+                const savedPanels = JSON.parse(savedDataJSON);
+                if (!Array.isArray(savedPanels) || savedPanels.length === 0) {
+                    localStorage.removeItem('translatorProject'); return;
+                }
+                panelsContainer.innerHTML = '';
+                savedPanels.forEach(savedState => {
+                    const newPanel = createAndAppendPanel();
+                    const get = (selector) => newPanel.querySelector(selector);
+                    get(`[data-mode-target='${savedState.mode}']`).click();
+                    
+                    if (savedState.mode === 'image' && savedState.uploadedFileName) {
+                        newPanel.state.uploadedFile = { name: savedState.uploadedFileName, type: savedState.uploadedFileType };
+                        const uploadPrompt = get('.upload-prompt');
+                        uploadPrompt.innerHTML = `
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <p class="mt-2 text-sm text-gray-600">فایل <span class="font-semibold text-blue-600">${savedState.uploadedFileName}</span> را دوباره بارگذاری کنید.</p>
+                            <p class="text-xs text-gray-500">تصویر قبلی برای جلوگیری از خطا ذخیره نشده بود.</p>
+                        `;
+                    }
+
+                    if (savedState.mode === 'text' && savedState.novelBgFileName) {
+                        newPanel.state.novelBgFile = { name: savedState.novelBgFileName, type: savedState.novelBgFileType };
+                    }
+
+                    get('.text-area-input').value = savedState.textInput;
+                    newPanel.state.textInput = savedState.textInput;
+                    get('.target-language').value = savedState.targetLanguage;
+                    get('.prompt-input').value = savedState.prompt;
+                    if (savedState.translationOutput) {
+                        get('.translation-output-textarea').value = savedState.translationOutput;
+                        newPanel.state.lastTranslationResult = savedState.translationOutput;
+                        get('.results-container').classList.remove('hidden');
+                        get('.translation-output-wrapper').classList.remove('hidden');
+                        // 🔥 رفع باگ: لودر رو مخفی کن
+                        get('.loader').classList.add('hidden');
+                        get('.chunk-progress-text').classList.add('hidden');
+                        get('.chunk-progress-container').classList.add('hidden');
+                    }
+                    if (savedState.advancedOutput) {
+                        get('.advanced-output').innerHTML = savedState.advancedOutput;
+                        get('.advanced-output').classList.remove('hidden');
+                        get('.advanced-features-container').classList.remove('hidden');
+                        get('.advanced-loader').classList.add('hidden');
+                    }
+                    get('.subtitle-chunk-slider').value = savedState.subtitleChunkValue;
+                    get('.subtitle-chunk-display').textContent = savedState.subtitleChunkValue;
+                    get('.colloquial-slider').value = savedState.colloquialSliderValue;
+                    get('.colloquial-level-display').textContent = savedState.colloquialSliderValue;
+                });
+                updatePanelNumbers();
+            } catch (e) {
+                console.error("Failed to restore project:", e);
+                localStorage.removeItem('translatorProject');
+            } finally {
+                dismissRestore();
+            }
+        }
+
+        function dismissRestore() {
+            localStorage.removeItem('translatorProject');
+            restoreSessionBar.classList.add('hidden');
+        }
+
+        function checkForSavedProject() {
+            if (localStorage.getItem('translatorProject')) {
+                restoreSessionBar.classList.remove('hidden');
+            }
+        }
+        
+        globalSettingsButton.addEventListener('click', () => globalPromptModal.classList.remove('hidden'));
+        closeGlobalModalButton.addEventListener('click', () => globalPromptModal.classList.add('hidden'));
+        applyGlobalPromptButton.addEventListener('click', () => {
+            const newPrompt = globalPromptInput.value;
+            if (newPrompt.trim()) {
+                document.querySelectorAll('.translator-panel').forEach(panel => {
+                    panel.querySelector('.prompt-input').value = newPrompt.replace(/{language}/g, panel.querySelector('.target-language').value);
+                });
+                globalPromptModal.classList.add('hidden');
+                scheduleSave();
+            } else { showError("پرامپت کلی نمی‌تواند خالی باشد."); }
+        });
+
+        copyAllResultsButton.addEventListener('click', () => {
+            const translations = [];
+            const includeHeaders = !copyWithoutHeadersCheckbox.checked;
+            const removeHalfSpaces = removeHalfSpaceCheckbox.checked;
+            document.querySelectorAll('.translator-panel').forEach((panel, index) => {
+                const translationText = panel.querySelector('.translation-output-textarea').value.trim();
+                if (translationText) {
+                    if (includeHeaders) translations.push(`--- پنل ${index + 1} ---\n${translationText}`);
+                    else translations.push(translationText);
+                }
+            });
+            if (translations.length === 0) { showError("هیچ ترجمه‌ای برای کپی کردن وجود ندارد."); return; }
+            let combinedText = translations.join('\n\n');
+            if (removeHalfSpaces) combinedText = combinedText.replace(/\u200c/g, '');
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = combinedText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try { document.execCommand('copy'); copyAllResultsButton.textContent = 'کپی شد!'; setTimeout(() => { copyAllResultsButton.textContent = 'کپی همه نتایج'; }, 2000); } catch (err) { showError('خطا در کپی کردن متن.'); }
+            document.body.removeChild(tempTextArea);
+        });
+
+        async function handleBatchUpload(event) {
+            let files = Array.from(event.target.files);
+            if (!files.length) return;
+            if (files.length > 80) { 
+                showError("حداکثر ۸۰ تصویر مجاز است."); 
+                event.target.value = null; 
+                return; 
+            }
+            if (sortByNameCheckbox.checked) files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+            const firstPanel = document.querySelector('.translator-panel');
+            let startIndex = 0;
+            if (document.querySelectorAll('.translator-panel').length === 1 && !firstPanel.state.uploadedFile && !firstPanel.state.textInput.trim()) {
+                firstPanel.handleImageUpload(files[0]);
+                startIndex = 1;
+            }
+            for (let i = startIndex; i < files.length; i++) {
+                const newPanel = createAndAppendPanel();
+                newPanel.handleImageUpload(files[i]);
+            }
+            updatePanelNumbers();
+            event.target.value = null;
+        }
+
+        openBatchModalButton.addEventListener('click', () => batchUploadModal.classList.remove('hidden'));
+        closeBatchModalButton.addEventListener('click', () => batchUploadModal.classList.add('hidden'));
+        batchImageUploadInput.addEventListener('change', (e) => {
+            batchUploadModal.classList.add('hidden');
+            handleBatchUpload(e);
+        });
+
+        startAllButton.addEventListener('click', async () => {
+            startAllButton.disabled = true;
+            const allPanels = document.querySelectorAll('.translator-panel');
+            const totalPanels = allPanels.length;
+
+            try {
+                for (let i = 0; i < totalPanels; i++) {
+                    const panel = allPanels[i];
+                    startAllButton.textContent = `ترجمه پنل ${i + 1} از ${totalPanels}`;
+                    panel.classList.add('is-translating');
+                    
+                    try {
+                        await panel.handleTranslation();
+                    } catch (error) {
+                        console.error(`Translation failed for panel ${i + 1}:`, error);
+                    } finally {
+                        panel.classList.remove('is-translating');
+                    }
+                }
+                showMessage("ترجمه گروهی با موفقیت کامل شد.", "success");
+            } finally {
+                startAllButton.disabled = false;
+                startAllButton.textContent = 'شروع ترجمه همه';
+            }
+        });
+
+        restoreButton.addEventListener('click', restoreProject);
+        dismissRestoreButton.addEventListener('click', dismissRestore);
+        closeModalButton.addEventListener('click', () => messageModal.classList.add('hidden'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialLoadCheck = document.getElementById('initial-load-check');
+            if (initialLoadCheck) {
+                initialLoadCheck.style.display = 'none';
+            }
+
+            panelsContainer.innerHTML = '';
+            try {
+                createAndAppendPanel();
+                updatePanelNumbers();
+                checkForSavedProject();
+            } catch (e) {
+                console.error("Error during initial panel creation:", e);
+                showError("خطا در بارگذاری اولیه صفحه. لطفاً مرورگر را رفرش کنید و از اتصال اینترنت خود مطمئن شوید.");
+            }
+        });
+
+    </script>
+</body>
+</html>
